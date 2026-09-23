@@ -28,6 +28,34 @@ type Provider interface {
 	Embeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error)
 }
 
+// NativeVideoProvider defines interface for video generation providers
+type NativeVideoProvider interface {
+	// CreateVideo creates a new video resource
+	CreateVideo(ctx context.Context, req *VideoRequest) (*VideoResponse, error)
+	
+	// GetVideo retrieves status of video generation by ID
+	GetVideo(ctx context.Context, id string) (*VideoResponse, error)
+	
+	// GetVideoContent retrieves the video content by ID
+	GetVideoContent(ctx context.Context, id string) (io.ReadCloser, error)
+	
+	// DeleteVideo deletes a video resource by ID (Best effort)
+	DeleteVideo(ctx context.Context, id string) (*VideoResponse, error)
+	
+	// HealthCheck retrieves liveness and active job count for the video provider
+	HealthCheck(ctx context.Context) (*VideoHealthResponse, error)
+}
+
+
+// NativeVideoRoutableProvider extends routing with native async video generation operations
+type NativeVideoRoutableProvider interface {
+	CreateVideo(ctx context.Context, providerType string, req *VideoRequest) (*VideoResponse, error)
+	GetVideo(ctx context.Context, providerType, id string) (*VideoResponse, error)
+	GetVideoContent(ctx context.Context, providerType, id string) (io.ReadCloser, error)
+	DeleteVideo(ctx context.Context, providerType, id string) (*VideoResponse, error)
+	HealthCheck(ctx context.Context, providerType string) (*VideoHealthResponse, error)
+}
+
 // AudioProvider is implemented by providers that support OpenAI-compatible audio
 // endpoints: text-to-speech (CreateSpeech) and speech-to-text (CreateTranscription).
 // It is optional so providers without audio support can omit it.

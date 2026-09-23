@@ -471,160 +471,164 @@ failover:
 # startup. To run a second instance of a type, use <PROVIDER>_<SUFFIX>_* env
 # vars or another named entry here.
 providers:
-  openai:
-    type: openai
-    api_key: "sk-..."
-    # Identified sessions stay on one key by default, preserving provider prompt
-    # cache affinity while still spreading different sessions across keys.
-    # Equivalent env vars: OPENAI_API_KEY_2, OPENAI_API_KEY_3, ...
-    # api_keys:
-    #   - "${OPENAI_API_KEY_2}"
-    #   - "${OPENAI_API_KEY_3}"
-    # Set false for strict per-request round robin (usually worse for prompt caching).
-    # session_sticky_keys: false
-    # Per-provider resilience overrides (optional).
-    # Only specified fields override the global defaults above.
-    # resilience:
-    #   retry:
-    #     max_retries: 5
-    #   circuit_breaker:
-    #     enabled: false
+  # openai:
+  #   type: openai
+  #   api_key: "sk-..."
+  #   # Identified sessions stay on one key by default, preserving provider prompt
+  #   # cache affinity while still spreading different sessions across keys.
+  #   # Equivalent env vars: OPENAI_API_KEY_2, OPENAI_API_KEY_3, ...
+  #   # api_keys:
+  #   #   - "${OPENAI_API_KEY_2}"
+  #   #   - "${OPENAI_API_KEY_3}"
+  #   # Set false for strict per-request round robin (usually worse for prompt caching).
+  #   # session_sticky_keys: false
+  #   # Per-provider resilience overrides (optional).
+  #   # Only specified fields override the global defaults above.
+  #   # resilience:
+  #   #   retry:
+  #   #     max_retries: 5
+  #   #   circuit_breaker:
+  #   #     enabled: false
 
-  anthropic:
-    type: anthropic
-    api_key: "sk-ant-..."
+  # anthropic:
+  #   type: anthropic
+  #   api_key: "sk-ant-..."
 
-  # ChatGPT subscription (Codex backend). Serves /v1/responses only and is
-  # billed against your ChatGPT plan. The key is the access token from
-  # `codex login`: jq -r .tokens.access_token ~/.codex/auth.json
-  chatgpt:
-    type: chatgpt
-    api_key: "${CHATGPT_API_KEY}"
-    # models: [gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5.5]
+  # # ChatGPT subscription (Codex backend). Serves /v1/responses only and is
+  # # billed against your ChatGPT plan. The key is the access token from
+  # # `codex login`: jq -r .tokens.access_token ~/.codex/auth.json
+  # chatgpt:
+  #   type: chatgpt
+  #   api_key: "${CHATGPT_API_KEY}"
+  #   # models: [gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5.5]
 
-  cohere:
-    type: cohere
-    api_key: "${COHERE_API_KEY}"
+  # cohere:
+  #   type: cohere
+  #   api_key: "${COHERE_API_KEY}"
 
-  bailian:
-    type: bailian
-    api_key: "${BAILIAN_API_KEY}"
-    # base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    # Alternative regions (replace {workspace-id} with your workspace):
-    # Singapore: "https://{workspace-id}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
-    # Frankfurt: "https://{workspace-id}.eu-central-1.maas.aliyuncs.com/compatible-mode/v1"
-    # Hong Kong: "https://{workspace-id}.cn-hongkong.maas.aliyuncs.com/compatible-mode/v1"
+  # bailian:
+  #   type: bailian
+  #   api_key: "${BAILIAN_API_KEY}"
+  #   # base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  #   # Alternative regions (replace {workspace-id} with your workspace):
+  #   # Singapore: "https://{workspace-id}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+  #   # Frankfurt: "https://{workspace-id}.eu-central-1.maas.aliyuncs.com/compatible-mode/v1"
+  #   # Hong Kong: "https://{workspace-id}.cn-hongkong.maas.aliyuncs.com/compatible-mode/v1"
 
-  gemini:
-    type: gemini
-    api_key: "..."
-    # Chat/responses, embeddings, and images use Gemini's native APIs by default.
-    # Set GEMINI_API_MODE=openai_compatible or api_mode: openai_compatible to use
-    # Gemini's OpenAI-compatible API instead (image edits require native mode).
-    # Native mode accepts image data URLs but does not fetch remote image URLs yet.
+  # gemini:
+  #   type: gemini
+  #   api_key: "..."
+  #   # Chat/responses, embeddings, and images use Gemini's native APIs by default.
+  #   # Set GEMINI_API_MODE=openai_compatible or api_mode: openai_compatible to use
+  #   # Gemini's OpenAI-compatible API instead (image edits require native mode).
+  #   # Native mode accepts image data URLs but does not fetch remote image URLs yet.
 
-  vertex:
-    type: vertex
-    auth_type: gcp_adc # or gcp_service_account
-    vertex_project: "my-gcp-project"
-    vertex_location: "us-central1"
-    # service_account_file: "/var/run/secrets/google/service-account.json"
-    # service_account_json: "${VERTEX_SERVICE_ACCOUNT_JSON}"
-    # service_account_json_base64: "${VERTEX_SERVICE_ACCOUNT_JSON_BASE64}"
-    # api_mode: native # or openai_compatible
-    # models:
-    #   - id: "google/gemini-2.5-flash"
+  # vertex:
+  #   type: vertex
+  #   auth_type: gcp_adc # or gcp_service_account
+  #   vertex_project: "my-gcp-project"
+  #   vertex_location: "us-central1"
+  #   # service_account_file: "/var/run/secrets/google/service-account.json"
+  #   # service_account_json: "${VERTEX_SERVICE_ACCOUNT_JSON}"
+  #   # service_account_json_base64: "${VERTEX_SERVICE_ACCOUNT_JSON_BASE64}"
+  #   # api_mode: native # or openai_compatible
+  #   # models:
+  #   #   - id: "google/gemini-2.5-flash"
 
-  xai:
-    type: xai
-    api_key: "..."
+  # xai:
+  #   type: xai
+  #   api_key: "..."
 
-  groq:
-    type: groq
-    api_key: "gsk_..."
+  # groq:
+  #   type: groq
+  #   api_key: "gsk_..."
 
-  fireworks:
-    type: fireworks
-    api_key: "fw_..."
-    # models:
-    #   - id: "accounts/fireworks/models/gpt-oss-120b"
+  # fireworks:
+  #   type: fireworks
+  #   api_key: "fw_..."
+  #   # models:
+  #   #   - id: "accounts/fireworks/models/gpt-oss-120b"
 
-  chutes:
-    type: chutes
-    api_key: "${CHUTES_API_KEY}"
-    # base_url defaults to "https://llm.chutes.ai/v1".
-    # Set base_url when using a different compatible endpoint.
+  # chutes:
+  #   type: chutes
+  #   api_key: "${CHUTES_API_KEY}"
+  #   # base_url defaults to "https://llm.chutes.ai/v1".
+  #   # Set base_url when using a different compatible endpoint.
 
-  elevenlabs:
-    type: elevenlabs
-    api_key: "${ELEVENLABS_API_KEY}"
-    # base_url defaults to "https://api.elevenlabs.io".
-    # Voice-only provider: text-to-speech and speech-to-text, no chat. The
-    # OpenAI "voice" field must be an ElevenLabs voice_id.
+  # elevenlabs:
+  #   type: elevenlabs
+  #   api_key: "${ELEVENLABS_API_KEY}"
+  #   # base_url defaults to "https://api.elevenlabs.io".
+  #   # Voice-only provider: text-to-speech and speech-to-text, no chat. The
+  #   # OpenAI "voice" field must be an ElevenLabs voice_id.
 
-  audiocpp:
-    type: audiocpp
-    base_url: "http://localhost:8099"
-    # Audio-only local server: text-to-speech and speech-to-text, no chat.
-    # base_url is required (audiocpp_server's default port collides with the
-    # gateway's own) and a trailing /v1 is accepted. api_key is optional and
-    # usually unset, since audio.cpp has no authentication of its own.
+  # audiocpp:
+  #   type: audiocpp
+  #   base_url: "http://localhost:8099"
+  #   # Audio-only local server: text-to-speech and speech-to-text, no chat.
+  #   # base_url is required (audiocpp_server's default port collides with the
+  #   # gateway's own) and a trailing /v1 is accepted. api_key is optional and
+  #   # usually unset, since audio.cpp has no authentication of its own.
 
-  meta:
-    type: meta
-    api_key: "..."
-    # Muse Spark models are not in the upstream model catalog yet; supply
-    # metadata here to advertise context window and pricing to the gateway.
-    # models:
-    #   - id: "muse-spark-1.1"
-    #     metadata:
-    #       context_window: 1048576
-    #       pricing:
-    #         currency: USD
-    #         input_per_mtok: 1.25
-    #         output_per_mtok: 4.25
+  # meta:
+  #   type: meta
+  #   api_key: "..."
+  #   # Muse Spark models are not in the upstream model catalog yet; supply
+  #   # metadata here to advertise context window and pricing to the gateway.
+  #   # models:
+  #   #   - id: "muse-spark-1.1"
+  #   #     metadata:
+  #   #       context_window: 1048576
+  #   #       pricing:
+  #   #         currency: USD
+  #   #         input_per_mtok: 1.25
+  #   #         output_per_mtok: 4.25
 
-  zai:
-    type: zai
-    api_key: "..."
-    # Optional: use GLM Coding Plan endpoint instead of the general endpoint.
-    # base_url: "https://api.z.ai/api/coding/paas/v4"
+  # zai:
+  #   type: zai
+  #   api_key: "..."
+  #   # Optional: use GLM Coding Plan endpoint instead of the general endpoint.
+  #   # base_url: "https://api.z.ai/api/coding/paas/v4"
 
-  xiaomi:
-    type: xiaomi
-    api_key: "..."
+  # xiaomi:
+  #   type: xiaomi
+  #   api_key: "..."
 
-  opencode_go:
-    type: opencode_go
-    api_key: "${OPENCODE_GO_API_KEY}"
+  # opencode_go:
+  #   type: opencode_go
+  #   api_key: "${OPENCODE_GO_API_KEY}"
 
-  ollama:
-    type: ollama
-    base_url: "http://localhost:11434/v1"
+  # ollama:
+  #   type: ollama
+  #   base_url: "http://localhost:11434/v1"
 
-  vllm:
-    type: vllm
-    base_url: "http://localhost:8000/v1"
-    # Optional: set this only when vllm serve was started with --api-key.
-    # api_key: "token-abc123"
+  # vllm:
+  #   type: vllm
+  #   base_url: "http://localhost:8000/v1"
+  #   # Optional: set this only when vllm serve was started with --api-key.
+  #   # api_key: "token-abc123"
 
-  # llm-d Router / Endpoint Picker (EPP)
-  llmd:
-    type: llmd
-    base_url: "http://quickstart-epp.llm-d.svc.cluster.local/v1"
-    # Optional trusted request class injected as llm-d inference headers.
-    # inference_objective: "standard-traffic"
-    # Derive the llm-d fairness ID from GoModel's effective user path (default).
-    fairness_from_user_path: true
-    # Declare models when the route does not forward GET /v1/models.
-    models:
-      - id: "Qwen/Qwen2.5-0.5B-Instruct"
+  # # llm-d Router / Endpoint Picker (EPP)
+  # llmd:
+  #   type: llmd
+  #   base_url: "http://quickstart-epp.llm-d.svc.cluster.local/v1"
+  #   # Optional trusted request class injected as llm-d inference headers.
+  #   # inference_objective: "standard-traffic"
+  #   # Derive the llm-d fairness ID from GoModel's effective user path (default).
+  #   fairness_from_user_path: true
+  #   # Declare models when the route does not forward GET /v1/models.
+  #   models:
+  #     - id: "Qwen/Qwen2.5-0.5B-Instruct"
 
-  sglang:
-    type: sglang
-    base_url: "http://localhost:30000/v1"
-    # Optional: set this only when launch_server uses --api-key.
-    # api_key: "token-abc123"
+  # sglang:
+  #   type: sglang
+  #   base_url: "http://localhost:30000/v1"
+  #   # Optional: set this only when launch_server uses --api-key.
+  #   # api_key: "token-abc123"
+
+  mockvideo:
+    type: mockvideo
+    base_url: "http://mock-video:8000"
 
   # Custom OpenAI-compatible provider
   # my-provider:

@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"strings"
+	"io"
 
 	"github.com/enterpilot/gomodel/internal/core"
 )
@@ -223,4 +224,53 @@ func forwardNativeResponseUtilityRequest(req *core.ResponsesRequest) *core.Respo
 	forwardReq := *req
 	forwardReq.Provider = ""
 	return &forwardReq
+}
+
+
+
+// CreateVideo routes native video job creation to a provider type.
+func (r *Router) CreateVideo(ctx context.Context, providerType string, req *core.VideoRequest) (*core.VideoResponse, error) {
+	resp, err := routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoResponse, error) {
+		return vp.CreateVideo(ctx, req)
+	})
+	return stampVideoProvider(resp, providerType), err
+}
+
+// GetVideo routes a video status lookup to a provider type.
+func (r *Router) GetVideo(ctx context.Context, providerType, id string) (*core.VideoResponse, error) {
+	resp, err := routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoResponse, error) {
+		return vp.GetVideo(ctx, id)
+	})
+	return stampVideoProvider(resp, providerType), err
+}
+
+// GetVideoContent routes a raw content fetch to a provider type.
+func (r *Router) GetVideoContent(ctx context.Context, providerType, id string) (io.ReadCloser, error) {
+	return routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (io.ReadCloser, error) {
+		return vp.GetVideoContent(ctx, id)
+	})
+}
+
+// DeleteVideo routes a delete to a provider type.
+func (r *Router) DeleteVideo(ctx context.Context, providerType, id string) (*core.VideoResponse, error) {
+	resp, err := routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoResponse, error) {
+		return vp.DeleteVideo(ctx, id)
+	})
+	return stampVideoProvider(resp, providerType), err
+}
+
+// HealthCheck routes a liveness probe to a provider type.
+func (r *Router) HealthCheck(ctx context.Context, providerType string) (*core.VideoHealthResponse, error) {
+	return routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoHealthResponse, error) {
+		return vp.HealthCheck(ctx)
+	})
+}
+
+// stampVideoProvider fills in the provider name so a caller can later map a
+// gateway-minted video ID back to whichever backend owns it
+func stampVideoProvider(resp *core.VideoResponse, providerType string) *core.VideoResponse {
+	if resp != nil {
+		resp.Provider = providerType
+	}
+	return resp
 }

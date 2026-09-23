@@ -110,6 +110,29 @@ func routeModelStream[Req any](
 	stream, _, err := routeResolvedModelCall(r, ctx, model, providerHint, buildForward, call)
 	return stream, err
 }
+ 
+func routeNativeVideoCall[T any](r *Router, ctx context.Context, providerType string, call func(context.Context, core.NativeVideoProvider) (T, error)) (T, error) {
+	var zero T
+ 
+	if err := r.ensureProviderInventoryReady(); err != nil {
+		return zero, err
+	}
+	if providerType == "" {
+		return zero, core.NewInvalidRequestError("provider type is required", nil)
+	}
+ 
+	provider := r.providerByTypeRegistry(providerType)
+	if provider == nil {
+		return zero, core.NewInvalidRequestError(fmt.Sprintf("no provider found for provider type: %s", providerType), nil)
+	}
+ 
+	vp, ok := provider.(core.NativeVideoProvider)
+	if !ok {
+		return zero, core.NewInvalidRequestError(fmt.Sprintf("%s does not support native video generation", providerType), nil)
+	}
+ 
+	return call(ctx, vp)
+}
 
 func routeNativeBatchCall[T any](r *Router, ctx context.Context, providerType string, call func(context.Context, core.NativeBatchProvider) (T, error)) (T, error) {
 	bp, err := r.resolveNativeBatchProvider(providerType)

@@ -18,6 +18,7 @@ import (
 	"github.com/enterpilot/gomodel/internal/responsestore"
 	"github.com/enterpilot/gomodel/internal/usage"
 	"github.com/enterpilot/gomodel/internal/versioncheck"
+	"github.com/enterpilot/gomodel/internal/video"
 )
 
 // Handler holds the HTTP handlers
@@ -42,6 +43,7 @@ type Handler struct {
 	pricingResolver                 usage.PricingResolver
 	batchStore                      batchstore.Store
 	fileStore                       filestore.Store
+	videoStore 						videostore.Store
 	responseStore                   responsestore.Store
 	// storesMu guards responseStore, conversationStore, and translatedSvc wiring.
 	storesMu                     sync.RWMutex
@@ -92,6 +94,7 @@ func newHandlerWithAuthorizer(
 		pricingResolver:          pricingResolver,
 		batchStore:               batchstore.NewMemoryStore(),
 		fileStore:                filestore.NewMemoryStore(),
+		videoStore: 			  videostore.NewMemoryStore(),
 		// Fallback stores with default bounded retention (TTL plus entry and
 		// byte caps); app wiring replaces them with storage-backed stores.
 		responseStore:                responsestore.NewMemoryStore(),
@@ -202,6 +205,13 @@ func (h *Handler) nativeBatch() *nativeBatchService {
 
 func (h *Handler) nativeFiles() *nativeFileService {
 	return &nativeFileService{provider: h.provider, fileStore: h.fileStore}
+}
+
+func (h *Handler) nativeVideo() *nativeVideoService {
+	return &nativeVideoService{
+		provider:   h.provider, // confirmed: core.RoutableProvider, same field nativeBatch() passes as Provider
+		videoStore: h.videoStore,
+	}
 }
 
 func (h *Handler) modelCalls() modelCallService {

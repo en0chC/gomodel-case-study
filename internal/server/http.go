@@ -520,6 +520,11 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	e.POST("/v1/batches/:id/cancel", handler.CancelBatch)
 	e.GET("/v1/batches/:id/results", handler.BatchResults)
 
+	e.POST("/v1/videos", handler.CreateVideo)
+	e.GET("/v1/videos/:id", handler.GetVideo)
+	e.GET("/v1/videos/:id/content", handler.GetVideoContent)
+	e.DELETE("/v1/videos/:id", handler.DeleteVideo)
+
 	// Admin API routes (behind ADMIN_ENDPOINTS_ENABLED flag). Managed keys
 	// need dashboard access to pass the gate; the master key always does.
 	if cfg != nil && cfg.AdminEndpointsEnabled && cfg.AdminHandler != nil {
