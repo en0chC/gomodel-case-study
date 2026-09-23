@@ -37,8 +37,6 @@ import (
 	"github.com/enterpilot/gomodel/internal/providers/xiaomi"
 	"github.com/enterpilot/gomodel/internal/providers/zai"
 	"github.com/enterpilot/gomodel/internal/providers/mockvideo"
-
-	"fmt"
 )
 
 // defaultProviderFactory builds the provider factory with every provider type
@@ -82,7 +80,6 @@ func defaultProviderFactory(cfg *config.Config) *providers.ProviderFactory {
 	factory.Add(xai.Registration)
 	factory.Add(xiaomi.Registration)
 	factory.Add(zai.Registration)
-	fmt.Println("TEST")
 	factory.Add(mockvideo.Registration)
 
 	return factory

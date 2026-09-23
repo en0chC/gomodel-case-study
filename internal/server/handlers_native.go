@@ -1,7 +1,6 @@
 package server
 
 import (
-	"os"
 	"github.com/labstack/echo/v5"
 )
 
@@ -192,11 +191,9 @@ func (h *Handler) GetFileContent(c *echo.Context) error {
 	return h.nativeFiles().GetFileContent(c)
 }
 
-
-
+// Delegate video endpoints to nativeVideoService 
 // Videos handles POST /v1/videos.
 func (h *Handler) CreateVideo(c *echo.Context) error {
-	os.Stderr.WriteString("HANDLER TEST !!!\n")
 	return h.nativeVideo().CreateVideo(c)
 }
  

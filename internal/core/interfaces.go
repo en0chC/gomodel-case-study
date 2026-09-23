@@ -28,26 +28,26 @@ type Provider interface {
 	Embeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error)
 }
 
-// NativeVideoProvider defines interface for video generation providers
+// Interface that backend-specific providor must implement
 type NativeVideoProvider interface {
-	// CreateVideo creates a new video resource
+	// Submit a new video generation job
 	CreateVideo(ctx context.Context, req *VideoRequest) (*VideoResponse, error)
 	
-	// GetVideo retrieves status of video generation by ID
+	// Retrieve current status/progress for a job
 	GetVideo(ctx context.Context, id string) (*VideoResponse, error)
 	
-	// GetVideoContent retrieves the video content by ID
+	// Stream the raw mp4 bytes for a completed job
 	GetVideoContent(ctx context.Context, id string) (io.ReadCloser, error)
 	
-	// DeleteVideo deletes a video resource by ID (Best effort)
+	// Cancel/delete a job (best effort)
 	DeleteVideo(ctx context.Context, id string) (*VideoResponse, error)
 	
-	// HealthCheck retrieves liveness and active job count for the video provider
+	// Report liveness and active job count
 	HealthCheck(ctx context.Context) (*VideoHealthResponse, error)
 }
 
 
-// NativeVideoRoutableProvider extends routing with native async video generation operations
+// Interface implemented by router to route native video calls to correct provider
 type NativeVideoRoutableProvider interface {
 	CreateVideo(ctx context.Context, providerType string, req *VideoRequest) (*VideoResponse, error)
 	GetVideo(ctx context.Context, providerType, id string) (*VideoResponse, error)

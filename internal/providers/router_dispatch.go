@@ -111,21 +111,24 @@ func routeModelStream[Req any](
 	return stream, err
 }
  
+// Routes native video call to specific provider type
 func routeNativeVideoCall[T any](r *Router, ctx context.Context, providerType string, call func(context.Context, core.NativeVideoProvider) (T, error)) (T, error) {
 	var zero T
- 
+	// Ensure provider inventory is loaded/ready
 	if err := r.ensureProviderInventoryReady(); err != nil {
 		return zero, err
 	}
+	// Reject empty provider type
 	if providerType == "" {
 		return zero, core.NewInvalidRequestError("provider type is required", nil)
 	}
- 
+	// Resolve provider type to particular provider that supports video
 	provider := r.providerByTypeRegistry(providerType)
 	if provider == nil {
 		return zero, core.NewInvalidRequestError(fmt.Sprintf("no provider found for provider type: %s", providerType), nil)
 	}
- 
+	// Type assert provider to core.NativeVideoProvider
+	// Ensure provider can support video operations
 	vp, ok := provider.(core.NativeVideoProvider)
 	if !ok {
 		return zero, core.NewInvalidRequestError(fmt.Sprintf("%s does not support native video generation", providerType), nil)

@@ -1,3 +1,5 @@
+// Implementation for mock backend provider interface
+// HTTP client for mock video backend
 package mockvideo
 
 import (
@@ -8,14 +10,13 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
  
 	"github.com/enterpilot/gomodel/internal/core"
 	"github.com/enterpilot/gomodel/internal/providers"
 )
 
-// Registration provides factory registration for the mock video provider
+// Provides factory registration for the mock video provider in provider factory
 var Registration = providers.Registration{
 	Type: "mockvideo",
 	New:  New,
@@ -28,44 +29,54 @@ var Registration = providers.Registration{
 const (
 	defaultBaseURL = "http://mock-video:8000"
 	modelName = "minimax-h3-mock"
-
 	// requestTimeout bounds every request
 	requestTimeout = 15 * time.Second
- 
-	// maxRetries bounds retries of a 503 from the backend's MOCK_FLAKY_RATE
+	// maxRetries bounds retries of a 503 from the backend's flakiness
 	maxRetries = 5
 	// defaultRetryWait is used if a 503 response has no Retry-After header
 	defaultRetryWait = 1 * time.Second
 )
 
-// Reads Retry-After header and returns duration to wait before retrying 
+// Reads Retry-After header and returns duration to wait before retrying
 func retryAfter(h http.Header) time.Duration {
 	secs, err := strconv.Atoi(h.Get("Retry-After"))
+	// Default to 1 second if header is missing or invalid (negative)
 	if err != nil || secs < 0 {
 		return defaultRetryWait
 	}
 	return time.Duration(secs) * time.Second
 }
 
-// sleep waits for d, or returns ctx.Err() early if the context is cancelled
+// Waits for d, or returns ctx.Err() early if the context is cancelled
 func sleep(ctx context.Context, d time.Duration) error {
 	timer := time.NewTimer(d)
 	defer timer.Stop()
+	// Wait for either the timer to expire or the context to be done
 	select {
-	case <-timer.C:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
+		case <-timer.C:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
 	}
 }
 
-// Provider is a minimal client for the mock video backend
+// Implements core.NativeVideoProvider for the mock video backend
 type Provider struct {
 	baseURL string
 	http    *http.Client
 }
 
-// New creates a new mock video provider
+// BackendError represents the error response from the mock video backend
+type BackendError struct {
+	Error struct {
+		Code    string
+		Message string
+	}
+}
+
+// Constructor for the mock video provider
+// Resolves confibured base URL or uses default if not provided
+// Builds http.Client with 15s timeout for all requests to the mock backend
 func New(providerCfg providers.ProviderConfig, opts providers.ProviderOptions) core.Provider {
 	return &Provider{
 		baseURL: providers.ResolveBaseURL(providerCfg.BaseURL, defaultBaseURL),
@@ -73,12 +84,7 @@ func New(providerCfg providers.ProviderConfig, opts providers.ProviderOptions) c
 	}
 }
 
-// Configures a custom base URL for the provider
-func (p *Provider) SetBaseURL(url string) {
-	p.baseURL = strings.TrimRight(url, "/")
-}
-
-// CheckAvailability verifies the mock backend is reachable
+// Health check of mock video backend
 func (p *Provider) CheckAvailability(ctx context.Context) error {
 	_, err := p.HealthCheck(ctx)
 	return err
@@ -96,7 +102,7 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 		bodyBytes = b
 	}
  
-	// Repeat HTTP request if it encounters retryable server error
+	// Repeat HTTP request if it encounters retryable server error (retry-after header)
 	for attempt := 0; ; attempt++ {
 		// Prepare request body reader
 		var reqBody io.Reader
@@ -109,6 +115,7 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 		if err != nil {
 			return fmt.Errorf("mockvideo: build request: %w", err)
 		}
+		// Set Content-Type header for JSON body
 		if bodyBytes != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
@@ -121,9 +128,11 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
  
 		// Check for retryable errors and retry
 		// Don't retry on POST to prevent duplicate jobs
-		if resp.StatusCode == http.StatusServiceUnavailable && method != http.MethodPost && attempt < maxRetries {
+		if resp.StatusCode == http.StatusServiceUnavailable 
+		&& method != http.MethodPost && attempt < maxRetries {
 			wait := retryAfter(resp.Header)
 			resp.Body.Close()
+			// Wait and then retry
 			if err := sleep(ctx, wait); err != nil {
 				return fmt.Errorf("mockvideo: %s %s: %w", method, path, err)
 			}
@@ -132,9 +141,15 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
  
 		// Error handling
 		if resp.StatusCode >= http.StatusBadRequest {
-			raw, _ := io.ReadAll(resp.Body)
+			var backendErr BackendError
+			if err := json.NewDecoder(resp.Body).Decode(&backendErr); err != nil {
+				resp.Body.Close()
+				return fmt.Errorf("mockvideo: request returned HTTP %d", resp.StatusCode)
+			}
 			resp.Body.Close()
-			return fmt.Errorf("mockvideo: %s %s returned %d: %s", method, path, resp.StatusCode, string(raw))
+			return fmt.Errorf("mockvideo: %s (%d): %s", backendErr.Error.Code, 
+				resp.StatusCode, backendErr.Error.Message,
+			)
 		}
 		if out == nil {
 			resp.Body.Close()
@@ -147,7 +162,7 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 	}
 }
 
-// CreateVideo submits a new video generation job
+// Submit a new video generation job
 func (p *Provider) CreateVideo(ctx context.Context, req *core.VideoRequest) (*core.VideoResponse, error) {
 	var resp core.VideoResponse
 	if err := p.do(ctx, http.MethodPost, "/v1/videos", req, &resp); err != nil {
@@ -156,7 +171,7 @@ func (p *Provider) CreateVideo(ctx context.Context, req *core.VideoRequest) (*co
 	return &resp, nil
 }
 
-// GetVideo retrieves current status/progress for a job
+// Retrieve current status/progress for a job
 func (p *Provider) GetVideo(ctx context.Context, id string) (*core.VideoResponse, error) {
 	var resp core.VideoResponse
 	if err := p.do(ctx, http.MethodGet, "/v1/videos/"+id, nil, &resp); err != nil {
@@ -165,7 +180,7 @@ func (p *Provider) GetVideo(ctx context.Context, id string) (*core.VideoResponse
 	return &resp, nil
 }
 
-// GetVideoContent streams the raw mp4 bytes for a completed job
+// Stream the raw mp4 bytes for a completed job
 func (p *Provider) GetVideoContent(ctx context.Context, id string) (io.ReadCloser, error) {
 	path := "/v1/videos/" + id + "/content"
 	// Repeat HTTP request if it encounters retryable server error
@@ -175,15 +190,19 @@ func (p *Provider) GetVideoContent(ctx context.Context, id string) (io.ReadClose
 		if err != nil {
 			return nil, fmt.Errorf("mockvideo: build request: %w", err)
 		}
+		
+		// Send HTTP request
 		resp, err := p.http.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("mockvideo: request failed: %w", err)
 		}
  
 		// Check for backend flakiness and retry
-		if resp.StatusCode == http.StatusServiceUnavailable && attempt < maxRetries {
+		if resp.StatusCode == http.StatusServiceUnavailable 
+		&& attempt < maxRetries {
 			wait := retryAfter(resp.Header)
 			resp.Body.Close()
+			// Wait and then retry
 			if err := sleep(ctx, wait); err != nil {
 				return nil, fmt.Errorf("mockvideo: %s: %w", path, err)
 			}
@@ -192,15 +211,20 @@ func (p *Provider) GetVideoContent(ctx context.Context, id string) (io.ReadClose
  
 		// Error handling
 		if resp.StatusCode >= http.StatusBadRequest {
-			raw, _ := io.ReadAll(resp.Body)
+			var backendErr BackendError
+			if err := json.NewDecoder(resp.Body).Decode(&backendErr); err != nil {
+				resp.Body.Close()
+				return nil, fmt.Errorf("mockvideo: request returned HTTP %d", resp.StatusCode)
+			}
 			resp.Body.Close()
-			return nil, fmt.Errorf("mockvideo: content fetch for %s returned %d: %s", id, resp.StatusCode, string(raw))
+			return nil, fmt.Errorf("mockvideo: %s (%d): %s", backendErr.Error.Code, 
+				resp.StatusCode, backendErr.Error.Message,)
 		}
 		return resp.Body, nil
 	}
 }
 
-// DeleteVideo cancels/deletes a job (best effort)
+// Cancel/delete a job (best effort)
 func (p *Provider) DeleteVideo(ctx context.Context, id string) (*core.VideoResponse, error) {
 	var resp core.VideoResponse
 	if err := p.do(ctx, http.MethodDelete, "/v1/videos/"+id, nil, &resp); err != nil {
@@ -209,7 +233,7 @@ func (p *Provider) DeleteVideo(ctx context.Context, id string) (*core.VideoRespo
 	return &resp, nil
 }
 
-// HealthCheck reports liveness and active job count.
+// Report liveness and active job count
 func (p *Provider) HealthCheck(ctx context.Context) (*core.VideoHealthResponse, error) {
 	var resp core.VideoHealthResponse
 	if err := p.do(ctx, http.MethodGet, "/healthz", nil, &resp); err != nil {
@@ -218,8 +242,7 @@ func (p *Provider) HealthCheck(ctx context.Context) (*core.VideoHealthResponse, 
 	return &resp, nil
 }
 
-// Satisfying core.Provider struct
-
+// Functions to satisfy the core.Provider struct
 func errVideoOnly() error {
 	return core.NewInvalidRequestError("mockvideo is a video-generation backend and does not support this operation", nil)
 }
@@ -232,6 +255,7 @@ func (p *Provider) StreamChatCompletion(_ context.Context, _ *core.ChatRequest) 
 	return nil, errVideoOnly()
 }
 
+// Mock video providor only has one model
 func (p *Provider) ListModels(_ context.Context) (*core.ModelsResponse, error) {
 	return &core.ModelsResponse{
 		Object: "list",

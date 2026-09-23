@@ -207,9 +207,10 @@ func (h *Handler) nativeFiles() *nativeFileService {
 	return &nativeFileService{provider: h.provider, fileStore: h.fileStore}
 }
 
+// Builds nativeVideoService that handles the native video endpoints
 func (h *Handler) nativeVideo() *nativeVideoService {
 	return &nativeVideoService{
-		provider:   h.provider, // confirmed: core.RoutableProvider, same field nativeBatch() passes as Provider
+		provider:   h.provider,
 		videoStore: h.videoStore,
 	}
 }

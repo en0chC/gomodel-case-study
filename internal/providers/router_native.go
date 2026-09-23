@@ -228,7 +228,7 @@ func forwardNativeResponseUtilityRequest(req *core.ResponsesRequest) *core.Respo
 
 
 
-// CreateVideo routes native video job creation to a provider type.
+// Routes job creation, stamps provider on response
 func (r *Router) CreateVideo(ctx context.Context, providerType string, req *core.VideoRequest) (*core.VideoResponse, error) {
 	resp, err := routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoResponse, error) {
 		return vp.CreateVideo(ctx, req)
@@ -236,7 +236,7 @@ func (r *Router) CreateVideo(ctx context.Context, providerType string, req *core
 	return stampVideoProvider(resp, providerType), err
 }
 
-// GetVideo routes a video status lookup to a provider type.
+// Routes a status lookup, stamps provider
 func (r *Router) GetVideo(ctx context.Context, providerType, id string) (*core.VideoResponse, error) {
 	resp, err := routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoResponse, error) {
 		return vp.GetVideo(ctx, id)
@@ -244,14 +244,14 @@ func (r *Router) GetVideo(ctx context.Context, providerType, id string) (*core.V
 	return stampVideoProvider(resp, providerType), err
 }
 
-// GetVideoContent routes a raw content fetch to a provider type.
+// Routes raw content stream
 func (r *Router) GetVideoContent(ctx context.Context, providerType, id string) (io.ReadCloser, error) {
 	return routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (io.ReadCloser, error) {
 		return vp.GetVideoContent(ctx, id)
 	})
 }
 
-// DeleteVideo routes a delete to a provider type.
+// Routes delete, stamps provider
 func (r *Router) DeleteVideo(ctx context.Context, providerType, id string) (*core.VideoResponse, error) {
 	resp, err := routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoResponse, error) {
 		return vp.DeleteVideo(ctx, id)
@@ -259,15 +259,14 @@ func (r *Router) DeleteVideo(ctx context.Context, providerType, id string) (*cor
 	return stampVideoProvider(resp, providerType), err
 }
 
-// HealthCheck routes a liveness probe to a provider type.
+// Routes health probe
 func (r *Router) HealthCheck(ctx context.Context, providerType string) (*core.VideoHealthResponse, error) {
 	return routeNativeVideoCall(r, ctx, providerType, func(ctx context.Context, vp core.NativeVideoProvider) (*core.VideoHealthResponse, error) {
 		return vp.HealthCheck(ctx)
 	})
 }
 
-// stampVideoProvider fills in the provider name so a caller can later map a
-// gateway-minted video ID back to whichever backend owns it
+// Fills in the provider name
 func stampVideoProvider(resp *core.VideoResponse, providerType string) *core.VideoResponse {
 	if resp != nil {
 		resp.Provider = providerType

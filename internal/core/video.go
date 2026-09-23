@@ -1,6 +1,7 @@
+// Wire types
 package core
 
-// VideoRequest is the request body for creating a video generation request
+// Request body for creating a video generation request
 type VideoRequest struct {
 	Model          string `json:"model"`
 	Prompt         string `json:"prompt"`
@@ -9,13 +10,13 @@ type VideoRequest struct {
 	InputReference string `json:"input_reference,omitempty"`
 }
 
-// VideoError is the error in the response body for a failed video generation request
+// Rrror in the response body for a failed video generation request
 type VideoError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-// VideoResponse is the video generation response body returned by the provider
+// Video generation response body returned by the provider
 type VideoResponse struct {
 	ID          string      `json:"id"`
 	Object      string      `json:"object"`
@@ -28,14 +29,13 @@ type VideoResponse struct {
 	Seconds     string      `json:"seconds"`
 	Size        string      `json:"size"`
 	Error       *VideoError `json:"error"`
- 
-	Deleted *bool `json:"deleted,omitempty"`
+	Deleted 	*bool 		`json:"deleted,omitempty"`
 	
 	Provider        string `json:"-"`
 	ProviderVideoID string `json:"-"`
 }
 
-// VideoHealthResponse is the response body returned by the provider for a health check
+// Response body returned by the provider for a health check
 type VideoHealthResponse struct {
 	OK         bool `json:"ok"`
 	ActiveJobs int  `json:"active_jobs"`
