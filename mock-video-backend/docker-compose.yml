@@ -1,0 +1,12 @@
+services:
+  mock-video:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      MOCK_MIN_SECONDS: "20"
+      MOCK_MAX_SECONDS: "60"
+      MOCK_CAPACITY: "2"
+      MOCK_FAIL_RATE: "0.2"
+      MOCK_RETENTION_SECONDS: "300"
+      # MOCK_FLAKY_RATE: "0.2"
+      # MOCK_CHUNKED_CONTENT: "1"

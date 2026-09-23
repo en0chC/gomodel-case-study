@@ -1,0 +1,40 @@
+services:
+  mock-video:
+    build: ./mock-video-backend   # path to this repo's Dockerfile — adjust to your layout
+    ports: ["8000:8000"]          # optional: only needed for host-side curl/debugging
+    environment:
+      MOCK_MIN_SECONDS: "3"
+      MOCK_MAX_SECONDS: "6"
+      MOCK_CAPACITY: "2"
+      MOCK_FAIL_RATE: "0.2"
+      MOCK_RETENTION_SECONDS: "300"
+      MOCK_MAX_QUEUE: "10"
+      # MOCK_FLAKY_RATE: "0.2"
+      # MOCK_CHUNKED_CONTENT: "1"
+
+  gomodel:
+    build: .                      # path to the GoModel repo's Dockerfile — adjust to your layout
+    ports: ["8080:8080"]          # 8080 confirmed from your startup log ("starting server","address":"[::]:8080")
+    depends_on:
+      - mock-video
+    environment:
+      # Service name, not localhost/docker.internal — compose's DNS resolves
+      # "mock-video" to that container directly. No /v1 suffix: HealthCheck
+      # hits /healthz at the root, CreateVideo/GetVideo hit /v1/videos... —
+      # mockvideo.go appends both kinds of path itself.
+      MOCKVIDEO_BASE_URL: "http://mock-video:8000"
+      GOMODEL_MASTER_KEY: "my-local-master-key-123"   # optional — silences the "UNSAFE MODE" warning
+    volumes:
+      # Persists the sqlite db/audit logs/install id across container
+      # recreates — your startup log warned about this. Confirm the
+      # container-side path against your Dockerfile's WORKDIR; "data/gomodel.db"
+      # in the log is relative to wherever gomodel actually runs from.
+      - gomodel-data:/app/data
+      # Alternative/addition to the env var above: mount a real config.yaml
+      # instead. GoModel searches "config/config.yaml" and "config.yaml"
+      # relative to its working directory (per your startup log) — match
+      # whichever of those two you want to use.
+      # - ./config.yaml:/app/config/config.yaml:ro
+
+volumes:
+  gomodel-data:

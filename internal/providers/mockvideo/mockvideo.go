@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
- 
+
 	"github.com/enterpilot/gomodel/internal/core"
 	"github.com/enterpilot/gomodel/internal/providers"
 )
@@ -28,7 +28,7 @@ var Registration = providers.Registration{
 
 const (
 	defaultBaseURL = "http://mock-video:8000"
-	modelName = "minimax-h3-mock"
+	modelName      = "minimax-h3-mock"
 	// requestTimeout bounds every request
 	requestTimeout = 15 * time.Second
 	// maxRetries bounds retries of a 503 from the backend's flakiness
@@ -53,10 +53,10 @@ func sleep(ctx context.Context, d time.Duration) error {
 	defer timer.Stop()
 	// Wait for either the timer to expire or the context to be done
 	select {
-		case <-timer.C:
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
@@ -101,7 +101,7 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 		}
 		bodyBytes = b
 	}
- 
+
 	// Repeat HTTP request if it encounters retryable server error (retry-after header)
 	for attempt := 0; ; attempt++ {
 		// Prepare request body reader
@@ -109,7 +109,7 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 		if bodyBytes != nil {
 			reqBody = bytes.NewReader(bodyBytes)
 		}
- 
+
 		// Build the HTTP request
 		req, err := http.NewRequestWithContext(ctx, method, p.baseURL+path, reqBody)
 		if err != nil {
@@ -119,17 +119,16 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 		if bodyBytes != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
- 
+
 		// Send the HTTP request
 		resp, err := p.http.Do(req)
 		if err != nil {
 			return fmt.Errorf("mockvideo: request failed: %w", err)
 		}
- 
+
 		// Check for retryable errors and retry
 		// Don't retry on POST to prevent duplicate jobs
-		if resp.StatusCode == http.StatusServiceUnavailable 
-		&& method != http.MethodPost && attempt < maxRetries {
+		if resp.StatusCode == http.StatusServiceUnavailable && method != http.MethodPost && attempt < maxRetries {
 			wait := retryAfter(resp.Header)
 			resp.Body.Close()
 			// Wait and then retry
@@ -138,7 +137,7 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 			}
 			continue
 		}
- 
+
 		// Error handling
 		if resp.StatusCode >= http.StatusBadRequest {
 			var backendErr BackendError
@@ -147,7 +146,7 @@ func (p *Provider) do(ctx context.Context, method, path string, body, out any) e
 				return fmt.Errorf("mockvideo: request returned HTTP %d", resp.StatusCode)
 			}
 			resp.Body.Close()
-			return fmt.Errorf("mockvideo: %s (%d): %s", backendErr.Error.Code, 
+			return fmt.Errorf("mockvideo: %s (%d): %s", backendErr.Error.Code,
 				resp.StatusCode, backendErr.Error.Message,
 			)
 		}
@@ -190,16 +189,15 @@ func (p *Provider) GetVideoContent(ctx context.Context, id string) (io.ReadClose
 		if err != nil {
 			return nil, fmt.Errorf("mockvideo: build request: %w", err)
 		}
-		
+
 		// Send HTTP request
 		resp, err := p.http.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("mockvideo: request failed: %w", err)
 		}
- 
+
 		// Check for backend flakiness and retry
-		if resp.StatusCode == http.StatusServiceUnavailable 
-		&& attempt < maxRetries {
+		if resp.StatusCode == http.StatusServiceUnavailable && attempt < maxRetries {
 			wait := retryAfter(resp.Header)
 			resp.Body.Close()
 			// Wait and then retry
@@ -208,7 +206,7 @@ func (p *Provider) GetVideoContent(ctx context.Context, id string) (io.ReadClose
 			}
 			continue
 		}
- 
+
 		// Error handling
 		if resp.StatusCode >= http.StatusBadRequest {
 			var backendErr BackendError
@@ -217,8 +215,8 @@ func (p *Provider) GetVideoContent(ctx context.Context, id string) (io.ReadClose
 				return nil, fmt.Errorf("mockvideo: request returned HTTP %d", resp.StatusCode)
 			}
 			resp.Body.Close()
-			return nil, fmt.Errorf("mockvideo: %s (%d): %s", backendErr.Error.Code, 
-				resp.StatusCode, backendErr.Error.Message,)
+			return nil, fmt.Errorf("mockvideo: %s (%d): %s", backendErr.Error.Code,
+				resp.StatusCode, backendErr.Error.Message)
 		}
 		return resp.Body, nil
 	}
@@ -268,11 +266,11 @@ func (p *Provider) ListModels(_ context.Context) (*core.ModelsResponse, error) {
 func (p *Provider) Responses(_ context.Context, _ *core.ResponsesRequest) (*core.ResponsesResponse, error) {
 	return nil, errVideoOnly()
 }
- 
+
 func (p *Provider) StreamResponses(_ context.Context, _ *core.ResponsesRequest) (io.ReadCloser, error) {
 	return nil, errVideoOnly()
 }
- 
+
 func (p *Provider) Embeddings(_ context.Context, _ *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
 	return nil, errVideoOnly()
 }
