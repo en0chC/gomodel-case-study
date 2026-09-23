@@ -12,9 +12,9 @@ docker compose up --build
 ```bash
 curl.exe http://localhost:8080/v1/videos -H "Authorization: Bearer my-local-master-key-123" -H "Content-Type: application/json" -d '@gomodel_test_request.json'
 
-curl.exe http://localhost:8080/v1/videos/<given_gateway_id> -H "Authorization: Bearer my-local-master-key-123"
+curl.exe http://localhost:8080/v1/videos/<id> -H "Authorization: Bearer my-local-master-key-123"
 
-curl.exe http://localhost:8080/v1/videos/<given_gateway_id>/content -H "Authorization: Bearer my-local-master-key-123" --output generated_video.mp4
+curl.exe http://localhost:8080/v1/videos/<id>/content -H "Authorization: Bearer my-local-master-key-123" --output generated_video.mp4
 ```
 
 ## Notes
