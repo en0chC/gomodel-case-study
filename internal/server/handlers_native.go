@@ -191,22 +191,22 @@ func (h *Handler) GetFileContent(c *echo.Context) error {
 	return h.nativeFiles().GetFileContent(c)
 }
 
-// Delegate video endpoints to nativeVideoService 
+// Delegate video endpoints to nativeVideoService
 // Videos handles POST /v1/videos.
 func (h *Handler) CreateVideo(c *echo.Context) error {
 	return h.nativeVideo().CreateVideo(c)
 }
- 
+
 // GetVideo handles GET /v1/videos/:id.
 func (h *Handler) GetVideo(c *echo.Context) error {
 	return h.nativeVideo().GetVideo(c)
 }
- 
+
 // GetVideoContent handles GET /v1/videos/:id/content.
 func (h *Handler) GetVideoContent(c *echo.Context) error {
 	return h.nativeVideo().GetVideoContent(c)
 }
- 
+
 // DeleteVideo handles DELETE /v1/videos/:id.
 func (h *Handler) DeleteVideo(c *echo.Context) error {
 	return h.nativeVideo().DeleteVideo(c)

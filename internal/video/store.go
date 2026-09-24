@@ -1,26 +1,20 @@
-// Package videostore defines persistence for the gateway-ID <-> backend-ID
-// mapping, mirroring internal/batch/store.go's shape exactly.
+// Defines video job persistence operations
 package videostore
- 
+
 import (
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
- 
+
 	"github.com/enterpilot/gomodel/internal/core"
 )
- 
-// ErrNotFound mirrors batch's ErrNotFound (name only confirmed by usage in
-// store.go's List doc comment — the actual sentinel wasn't shown, so this is
-// a same-shaped stand-in; swap for the real one if it lives elsewhere).
+
+// Returned when a video job is not found in the store
 var ErrNotFound = errors.New("videostore: not found")
- 
-// StoredVideo is the persisted record for one video job: the response
-// GoModel hands back to callers (bearing the gateway-minted ID), plus which
-// backend actually owns it and what that backend calls it — the "Backend job
-// ID <-> GoModel video ID" mapping from the Flows doc.
+
+// Record persisted per job, gateway ID <-> provider ID mapping
 type StoredVideo struct {
 	Video           *core.VideoResponse
 	ProviderType    string
@@ -29,53 +23,49 @@ type StoredVideo struct {
 	UserPath        string
 	SessionID       string
 }
- 
-// Store defines persistence operations for video job lifecycle, mirroring
-// batch.Store's shape (same method signatures, same List semantics).
+
+// Defines the interface for video job persistence operations
 type Store interface {
 	Create(ctx context.Context, video *StoredVideo) error
 	Get(ctx context.Context, id string) (*StoredVideo, error)
-	// List returns jobs newest first, starting after the cursor id. A
-	// non-empty userPath keeps only jobs inside that subtree, matching
-	// batch.Store.List's documented behavior.
 	List(ctx context.Context, limit int, after, userPath string) ([]*StoredVideo, error)
 	Update(ctx context.Context, video *StoredVideo) error
 	Delete(ctx context.Context, id string) error
 	Close() error
 }
- 
-// MemoryStore is an in-process Store: fine for getting the pipeline working
-// and testable right now, but state doesn't survive a restart — same caveat
-// the mock backend itself carries. Your actual batchStore is presumably
-// sqlite-backed (per "storage configured","type":"sqlite" in the startup
-// log), so this should eventually be swapped for whatever backs that, for
-// the same durability. Not attempted here since that implementation wasn't
-// shown to me — this is a working stand-in, not a guess at sqlite schema.
+
+// In-memory implementation of the store interface
 type MemoryStore struct {
 	mu    sync.RWMutex
 	data  map[string]*StoredVideo
 	order []string // newest-first order of IDs, for List
 }
- 
+
 // NewMemoryStore creates an empty in-memory video store.
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{data: make(map[string]*StoredVideo)}
 }
- 
+
+// Adds new video job to the store
 func (s *MemoryStore) Create(_ context.Context, video *StoredVideo) error {
+	// Validate input
 	if video == nil || video.Video == nil || video.Video.ID == "" {
 		return errors.New("videostore: video and video.ID are required")
 	}
+	// Lock for writing
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Check for duplicate ID
 	if _, exists := s.data[video.Video.ID]; exists {
 		return fmt.Errorf("videostore: video %s already exists", video.Video.ID)
 	}
+	// Add job to store
 	s.data[video.Video.ID] = video
 	s.order = append([]string{video.Video.ID}, s.order...)
 	return nil
 }
- 
+
+// Retrieves video job by ID
 func (s *MemoryStore) Get(_ context.Context, id string) (*StoredVideo, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -85,12 +75,14 @@ func (s *MemoryStore) Get(_ context.Context, id string) (*StoredVideo, error) {
 	}
 	return v, nil
 }
- 
+
+// Lists video jobs
 func (s *MemoryStore) List(_ context.Context, limit int, after, userPath string) ([]*StoredVideo, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
- 
+
 	start := 0
+	// If 'after' is specified, only list jobs after that ID
 	if after != "" {
 		found := false
 		for i, id := range s.order {
@@ -104,21 +96,25 @@ func (s *MemoryStore) List(_ context.Context, limit int, after, userPath string)
 			return nil, ErrNotFound
 		}
 	}
- 
+
 	var out []*StoredVideo
+	// Iterate over ordered IDs and collect jobs
 	for _, id := range s.order[start:] {
 		v := s.data[id]
+		// Filter by userPath if specified
 		if userPath != "" && !strings.HasPrefix(v.UserPath, userPath) {
 			continue
 		}
 		out = append(out, v)
+		// Stop if limit is reached
 		if limit > 0 && len(out) >= limit {
 			break
 		}
 	}
 	return out, nil
 }
- 
+
+// Updates an existing video job in the store
 func (s *MemoryStore) Update(_ context.Context, video *StoredVideo) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -128,7 +124,8 @@ func (s *MemoryStore) Update(_ context.Context, video *StoredVideo) error {
 	s.data[video.Video.ID] = video
 	return nil
 }
- 
+
+// Deletes a video job from the store
 func (s *MemoryStore) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -138,11 +135,13 @@ func (s *MemoryStore) Delete(_ context.Context, id string) error {
 	delete(s.data, id)
 	for i, oid := range s.order {
 		if oid == id {
+			// Remove ID from order slice
 			s.order = append(s.order[:i], s.order[i+1:]...)
 			break
 		}
 	}
 	return nil
 }
- 
+
+// Close releases resources (no-op for memory store)
 func (s *MemoryStore) Close() error { return nil }

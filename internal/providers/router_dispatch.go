@@ -110,7 +110,7 @@ func routeModelStream[Req any](
 	stream, _, err := routeResolvedModelCall(r, ctx, model, providerHint, buildForward, call)
 	return stream, err
 }
- 
+
 // Routes native video call to specific provider type
 func routeNativeVideoCall[T any](r *Router, ctx context.Context, providerType string, call func(context.Context, core.NativeVideoProvider) (T, error)) (T, error) {
 	var zero T
@@ -133,7 +133,7 @@ func routeNativeVideoCall[T any](r *Router, ctx context.Context, providerType st
 	if !ok {
 		return zero, core.NewInvalidRequestError(fmt.Sprintf("%s does not support native video generation", providerType), nil)
 	}
- 
+
 	return call(ctx, vp)
 }
 
